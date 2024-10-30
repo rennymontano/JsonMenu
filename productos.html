@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertir JSON a Tabla Anidada</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #e9ecef;
+        }
+        .nested {
+            padding-left: 20px; /* Indent nested rows */
+        }
+        .bold {
+            font-weight: bold; /* Bold text */
+        }
+        .filter {
+            margin-bottom: 20px;
+        }
+    </style>
+    <!-- Cargar la librería SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<h1>Convertir JSON a Tabla Anidada</h1>
+<textarea id="jsonInput" placeholder="Introduce tu JSON aquí..."></textarea>
+<button id="convertButton">Convertir a Tabla</button>
+
+<div class="filter">
+    <label for="filterCombo">Filtrar por Combo:</label>
+    <select id="filterCombo">
+        <option value="">Todos</option>
+        <option value="Sí">Sí</option>
+        <option value="No">No</option>
+    </select>
+    <label for="filterDescription">Filtrar por Descripción:</label>
+    <input type="text" id="filterDescription" placeholder="Descripción">
+</div>
+
+<button id="exportButton" style="display:none;">Exportar a Excel</button>
+
+<div id="result"></div>
+
+<script>
+    document.getElementById('convertButton').addEventListener('click', function() {
+        const jsonInput = document.getElementById('jsonInput').value;
+        try {
+            const data = JSON.parse(jsonInput);
+            generateNestedTable(data.data);
+        } catch (error) {
+            alert("Error en el JSON: " + error.message);
+        }
+    });
+
+    function generateNestedTable(data) {
+        let table = '<table id="dataTable"><thead><tr>';
+        
+        // Crear encabezados de la tabla
+        table += '<th>Producto ID</th>';
+        table += '<th>Descripción</th>';
+        table += '<th>Fecha Activación</th>';
+        table += '<th>Imagen</th>';
+        table += '<th>Es Combo</th>'; // Nueva columna para identificar combos
+        table += '<th>Grupos Combo</th>';
+        table += '</tr></thead><tbody>';
+        
+        // Crear filas de la tabla
+        data.forEach(item => {
+            const isCombo = item.comboGrupos.length > 0; // Verificar si es un combo
+            table += `<tr>
+                <td>${item.productoId}</td>
+                <td>${item.descripcionTPV}</td>
+                <td>${item.fechaActivacion}</td>
+                <td><img src="${item.imagenTPV}" alt="${item.descripcionTPV}" width="50"></td>
+                <td>${isCombo ? 'Sí' : 'No'}</td> <!-- Indicar si es un combo -->
+                <td></td>
+            </tr>`;
+
+            if (isCombo) {
+                item.comboGrupos.forEach(combo => {
+                    table += `<tr class="nested">
+                        <td></td>
+                        <td class="bold">${combo.descripcion}</td> <!-- Nombre del combo en negrita -->
+                        <td></td>
+                        <td></td>
+                        <td>Sí</td> <!-- Indicar que es un combo -->
+                        <td>Min: ${combo.cantidadMinima}, Max: ${combo.cantidadMaxima}</td>
+                    </tr>`;
+
+                    combo.comboGruposProductos.forEach(grupoProducto => {
+                        table += `<tr class="nested">
+                            <td>${grupoProducto.productoId}</td>
+                            <td>- Producto ID: ${grupoProducto.productoId}</td>
+                            <td></td>
+                            <td></td>
+                            <td>Sí</td> <!-- Indicar que es un combo (hijo) -->
+                            <td>Coste Extra: ${grupoProducto.costeExtra}</td>
+                        </tr>`;
+                    });
+                });
+            }
+        });
+        
+        table += '</tbody></table>';
+        document.getElementById('result').innerHTML = table;
+
+        // Mostrar el botón de exportar
+        document.getElementById('exportButton').style.display = 'inline';
+        
+        // Agregar eventos de filtrado
+        addFilterListeners();
+    }
+
+    function addFilterListeners() {
+        const filterCombo = document.getElementById('filterCombo');
+        const filterDescription = document.getElementById('filterDescription');
+
+        filterCombo.addEventListener('change', filterTable);
+        filterDescription.addEventListener('input', filterTable);
+    }
+
+    function filterTable() {
+        const filterComboValue = document.getElementById('filterCombo').value;
+        const filterDescriptionValue = document.getElementById('filterDescription').value.toLowerCase();
+
+        const table = document.getElementById('dataTable');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < rows.length; i++) { // Comenzar en 1 para saltar el encabezado
+            const row = rows[i];
+            const isComboCell = row.cells[4].textContent; // Celda "Es Combo"
+            const descriptionCell = row.cells[1].textContent.toLowerCase(); // Celda "Descripción"
+
+            let showRow = true;
+
+            if (filterComboValue && filterComboValue !== isComboCell) {
+                showRow = false; // Si no coincide con el filtro de combo
+            }
+            if (filterDescriptionValue && !descriptionCell.includes(filterDescriptionValue)) {
+                showRow = false; // Si no coincide con la descripción
+            }
+
+            row.style.display = showRow ? '' : 'none'; // Mostrar o ocultar la fila
+        }
+    }
+
+    document.getElementById('exportButton').addEventListener('click', function() {
+        exportTableToExcel('dataTable', 'productos.xlsx');
+    });
+
+    function exportTableToExcel(tableID, filename = '') {
+        const tableSelect = document.getElementById(tableID);
+        const workbook = XLSX.utils.table_to_book(tableSelect, { sheet: "Productos" });
+        XLSX.writeFile(workbook, filename || 'excel_data.xlsx');
+    }
+</script>
+
+</body>
+</html>

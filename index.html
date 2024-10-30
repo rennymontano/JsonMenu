@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menús y Recetas</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<h1>Menús y Recetas</h1>
+
+<!-- Sección para ingresar o cargar JSON -->
+<label for="jsonInput">Pega tu JSON aquí:</label>
+<textarea id="jsonInput" rows="10" placeholder="Pega aquí el contenido JSON"></textarea>
+<br>
+<label for="jsonFile">O carga un archivo JSON:</label>
+<input type="file" id="jsonFile" accept=".json">
+<button onclick="loadJSON()">Cargar y generar tabla</button>
+<br><br>
+
+<!-- Sección para mostrar la información del componente -->
+<div id="componentInfo">
+    <!-- Aquí se llenará la información del componente con JavaScript -->
+</div>
+
+<!-- Filtros -->
+<label for="menuFilter">Filtrar por MenuName:</label>
+<input type="text" id="menuFilter" placeholder="Buscar por nombre del menú" onkeyup="filterTable()">
+<br>
+<label for="recipeFilter">Filtrar por RecipeDescription:</label>
+<input type="text" id="recipeFilter" placeholder="Buscar por descripción de la receta" onkeyup="filterTable()">
+<br><br>
+
+<!-- Botón para exportar a Excel -->
+<button onclick="exportTableToExcelXLSX()">Exportar a Excel (.xlsx)</button>
+
+<!-- Tabla de datos -->
+<table id="menuTable">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">MenuID</th>
+            <th onclick="sortTable(1)">MenuName</th>
+            <th>Day</th>
+            <th onclick="sortTable(3)">RecipeID</th>
+            <th onclick="sortTable(4)">RecipeDescription</th>
+            <th onclick="sortTable(5)">CourseName</th>
+            <th onclick="sortTable(6)">CourseObject</th>
+        </tr>
+    </thead>
+    <tbody id="menuTableBody">
+        <!-- Aquí se llenarán las filas con JavaScript -->
+    </tbody>
+</table>
+
+<!-- Paginación -->
+<div id="pagination"></div>
+
+<!-- Agregar la librería de SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="js/script.js"></script>
+
+</body>
+</html>
